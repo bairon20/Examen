@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  front-despacho:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_VENTAS_URL=http://${API_VENTAS_HOST}/api/v1/ventas
+        - VITE_API_DESPACHOS_URL=http://${API_DESPACHOS_HOST}/api/v1/despachos
+    container_name: front-despacho
+    restart: always
+    ports:
+      - "80:80"

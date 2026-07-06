@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pready"]
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  back-ventas:
+    build:
+      context: ./back-Ventas_SpringBoot/Springboot-API-REST
+      dockerfile: Dockerfile
+    container_name: back-ventas
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_ENDPOINT=db
+      - DB_PORT=3306
+      - DB_NAME=ventas_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  back-despachos:
+    build:
+      context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+      dockerfile: Dockerfile
+    container_name: back-despachos
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_ENDPOINT=db
+      - DB_PORT=3306
+      - DB_NAME=despachos_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  front-despacho:
+    build:
+      context: ./front_despacho
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_VENTAS_URL=http://localhost:8080/api/v1/ventas
+        - VITE_API_DESPACHOS_URL=http://localhost:8081/api/v1/despachos
+    container_name: front-despacho
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - back-ventas
+      - back-despachos
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
