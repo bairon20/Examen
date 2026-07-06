@@ -65,7 +65,7 @@ El ciclo de Integración y Entrega Continua está completamente automatizado y d
 2. **[backend-ventas.yml](file:///c:/Users/bg144/Downloads/proyecto.semestral4/proyecto%20semestral/proyecto%20semestral/.github/workflows/backend-ventas.yml)**
 3. **[frontend.yml](file:///c:/Users/bg144/Downloads/proyecto.semestral4/proyecto%20semestral/proyecto%20semestral/.github/workflows/frontend.yml)**
 
-### Flujo del Pipeline para los Backends:
+### Flujo del Pipeline para todos los servicios:
 ```mermaid
 graph LR
     Push[Push a Main] --> Auth[Autenticar en AWS]
@@ -79,7 +79,8 @@ graph LR
 * **Registro de Imágenes (Amazon ECR):** Las imágenes se envían con tag `:latest` y tags de ID de ejecución al registro privado de AWS ECR en **Norte de Virginia (`us-east-1`)**:
   * `${{ steps.login-ecr.outputs.registry }}/api_despachos:latest`
   * `${{ steps.login-ecr.outputs.registry }}/ventas_api:latest`
-* **Despliegue Continuo (CD):** El pipeline se conecta mediante SSH (usando claves privadas) a la instancia de producción en EC2, autentica la máquina en el registro privado de ECR mediante un token seguro enviado al vuelo (`aws ecr get-login-password`), descarga la nueva imagen (`docker pull`) y arranca el contenedor con las variables de base de datos correctas.
+  * `${{ steps.login-ecr.outputs.registry }}/front_despacho:latest`
+* **Despliegue Continuo (CD):** El pipeline se conecta mediante SSH (usando claves privadas) a la instancia de producción en EC2, autentica la máquina en el registro privado de ECR mediante un token seguro enviado al vuelo (`aws ecr get-login-password`), descarga la nueva imagen (`docker pull`) y arranca el contenedor con la configuración correspondiente. En el frontend, se pasan las URLs de backend dinámicamente obtenidas de Doppler como argumentos de construcción (`build-args`).
 
 ---
 

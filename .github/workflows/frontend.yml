@@ -1,4 +1,4 @@
-name: ci_cd_front_despacho
+name: Build & Deploy Frontend
 
 on:
   push:
@@ -18,6 +18,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+            
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Instalar Doppler CLI
         uses: dopplerhq/cli-action@v3
 
@@ -31,46 +37,55 @@ jobs:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         run: |
           echo "SERVIDOR_FRONTEND=$(doppler secrets get SERVIDOR_FRONTEND --plain)" >> $GITHUB_ENV
+          echo "SERVIDOR_VENTAS=$(doppler secrets get SERVIDOR_VENTAS --plain)" >> $GITHUB_ENV
+          echo "SERVIDOR_DESPACHO=$(doppler secrets get SERVIDOR_DESPACHO --plain)" >> $GITHUB_ENV
 
-      - name: crear carpeta en el servidor AWS ec2
-        uses: appleboy/ssh-action@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ env.SERVIDOR_FRONTEND }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.EC2_KEY }}
-          port: ${{ secrets.PORT }}
-          script: |
-            mkdir -p /home/ubuntu/front_despacho
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
 
-      - name: crear el ssh desde el servidor de github secrets a la maquina ec2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image to ECR
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/front_despacho:latest
+          context: ./front_despacho
+          file: ./front_despacho/Dockerfile
+          build-args: |
+            VITE_API_VENTAS_URL=http://${{ env.SERVIDOR_VENTAS }}:8080/api/v1/ventas
+            VITE_API_DESPACHOS_URL=http://${{ env.SERVIDOR_DESPACHO }}:8081/api/v1/despachos
+
+      - name: Get ECR Password
+        id: ecr-pass
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "PASSWORD=$(aws ecr get-login-password --region us-east-1)" >> $GITHUB_ENV
 
-      - name: Deploy archivos al servidor con rsync sincroniza directorio del repo github, hacia el servidor ec2
-        uses: burnett01/rsync-deployments@7.0.2
-        with:
-          switches: "-avz --delete"
-          path: "./front_despacho/"
-          remote_host: ${{ env.SERVIDOR_FRONTEND }}
-          remote_user: ${{ secrets.USERNAME }}
-          remote_path: "/home/ubuntu/front_despacho/"
-          remote_key: ${{ secrets.EC2_KEY }}
-          remote_port: ${{ secrets.PORT }}
-
-      - name: sleep
-        run: sleep 20
-        
-      - name: Ejecutar docker-compose para el deploy de nginx aislado
+      - name: Desplegar en EC2 mediante SSH
         uses: appleboy/ssh-action@v1
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_PASSWORD: ${{ env.PASSWORD }}
         with:
           host: ${{ env.SERVIDOR_FRONTEND }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_KEY }}
           port: ${{ secrets.PORT }}
+          envs: ECR_REGISTRY,ECR_PASSWORD
           script: |
-            cd /home/ubuntu/front_despacho
-            sudo docker-compose down || true
-            sudo docker-compose up -d --build
-            sudo docker image prune -f
+            mkdir -p /home/ubuntu/front_despacho/
+            cd /home/ubuntu/front_despacho/
+            sudo apt update -y
+            sudo apt install -y docker.io docker-compose
+            echo "$ECR_PASSWORD" | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
+            sudo docker pull $ECR_REGISTRY/front_despacho:latest
+            sudo docker stop front_despacho || true
+            sudo docker rm front_despacho || true
+            sudo docker run -d --name front_despacho -p 80:80 $ECR_REGISTRY/front_despacho:latest

@@ -66,6 +66,7 @@ El ciclo de despliegue se automatizó por completo mediante pipelines de GitHub 
    * Compila la imagen y la publica en el registro privado bajo las URIs correspondientes:
      * `545017861270.dkr.ecr.us-east-1.amazonaws.com/api_despachos:latest`
      * `545017861270.dkr.ecr.us-east-1.amazonaws.com/ventas_api:latest`
+     * `545017861270.dkr.ecr.us-east-1.amazonaws.com/front_despacho:latest`
 3. **Despliegue Continuo (CD) Seguro:**
    * El runner inicia una conexión SSH con las instancias EC2 en AWS utilizando una clave privada (`SSH_KEY_CITT`).
    * Para evitar almacenar claves estáticas de AWS en los servidores EC2 de producción, el runner genera un token temporal de lectura (`aws ecr get-login-password --region us-east-1`) y lo transmite de manera segura al servidor EC2 a través del túnel SSH para autenticar y realizar el `docker pull`.
