@@ -30,7 +30,7 @@ jobs:
       - name: Configurar Doppler CLI
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: doppler setup --token $DOPPLER_TOKEN
+        run: doppler setup --token "$DOPPLER_TOKEN" --no-interactive
 
       - name: Obtener secretos desde Doppler
         env:
