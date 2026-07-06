@@ -102,12 +102,13 @@ graph LR
 
 > [!IMPORTANT]
 > **Estado del Clúster en AWS (Listo para Demostración):**
-> Se ha creado el clúster ECS `proyecto-semestral-cluster` en la región de **Norte de Virginia (`us-east-1`)** y se registraron exitosamente las **Task Definitions** bajo Fargate para cada microservicio:
-> * `ventas-api` (Port 8080)
-> * `despachos-api` (Port 8081)
-> * `front-despacho` (Port 80)
+> Se ha creado el clúster ECS `proyecto-semestral-cluster` en la región de **Norte de Virginia (`us-east-1`)** y se desplegaron los servicios bajo Fargate detrás de tu **Application Load Balancer (ALB)**:
+> * **URL del Balanceador:** [http://semestral-alb-25385715.us-east-1.elb.amazonaws.com/](http://semestral-alb-25385715.us-east-1.elb.amazonaws.com/)
+> * **Servicio Ventas:** `ventas-service-v2` (Puerto container 8080, ruta `/api/v1/ventas*`)
+> * **Servicio Despachos:** `despachos-service-v2` (Puerto container 8081, ruta `/api/v1/despachos*`)
+> * **Servicio Frontend:** `front-despacho-service-v2` (Puerto container 80, ruta `/*` por defecto)
 >
-> Esto te permite demostrar ante el docente tanto la orquestación en caliente basada en ECS Fargate como la entrega automatizada actual basada en EC2 y ECR.
+> Esto te permite demostrar ante el docente la orquestación en caliente basada en ECS Fargate utilizando el balanceador de carga para ruteo de tráfico sin IPs fijas.
 
 Para el despliegue final en producción en AWS, se recomienda utilizar **Amazon ECS (Elastic Container Service) con Fargate** en lugar de instancias EC2 independientes administradas manualmente:
 

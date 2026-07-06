@@ -96,15 +96,16 @@ La topología de red recomendada para producción en AWS garantiza alta segurida
 
 ## 6. Orquestación y Escalabilidad en Producción: ECS/EKS vs EC2 Manual
 
-### 6.1. Clúster Aprovisionado en AWS para el Proyecto
+### 6.1. Clúster Aprovisionado y Balanceador de Carga en AWS
 Como parte práctica de esta entrega, se ha configurado y desplegado de forma activa en la cuenta de AWS del estudiante en la región **us-east-1 (Norte de Virginia)**:
 * **Clúster de Amazon ECS:** `proyecto-semestral-cluster`
-* **Task Definitions (Fargate):**
-  * `ventas-api` (Port 8080) expuesto para el contenedor de la API de Ventas de Spring Boot.
-  * `despachos-api` (Port 8081) expuesto para el contenedor de la API de Despachos de Spring Boot.
-  * `front-despacho` (Port 80) expuesto para el servidor web Nginx con la compilación estática del Frontend React.
+* **Application Load Balancer (ALB):** `semestral-alb` (DNS: `semestral-alb-25385715.us-east-1.elb.amazonaws.com`)
+* **Servicios de Fargate (Revisión v2):**
+  * `ventas-service-v2`: Asociado al Target Group de Ventas (puerto 8080, ruta `/api/v1/ventas*`).
+  * `despachos-service-v2`: Asociado al Target Group de Despachos (puerto 8081, ruta `/api/v1/despachos*`).
+  * `front-despacho-service-v2`: Asociado al Target Group de Frontend (puerto 80, ruta `/*` por defecto).
 
-Estas definiciones están listas para ser ejecutadas como servicios independientes dentro de subredes públicas (`awsvpc` network mode), lo que proporciona aislamiento de red y escalado independiente por microservicio.
+Con esta configuración, el balanceador de carga actúa como punto de entrada único de la plataforma. Recibe todo el tráfico HTTP en el puerto 80 y lo distribuye dinámicamente a las tareas de Fargate basándose en reglas de enrutamiento por rutas. Esto elimina la necesidad de IPs estáticas o la exposición directa de los servidores de base.
 
 Para ambientes de producción empresarial, el uso de despliegue manual en instancias EC2 presenta serias limitaciones operativas. Por ello, se fundamenta la adopción de servicios de orquestación administrados como **Amazon ECS (Elastic Container Service) con Fargate**:
 

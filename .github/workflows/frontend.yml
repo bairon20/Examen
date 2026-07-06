@@ -36,36 +36,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Fetch Backend Fargate IPs
-        run: |
-          # Fetch Ventas IP
-          VENTAS_TASK_ARN=$(aws ecs list-tasks --cluster proyecto-semestral-cluster --service-name ventas-service --query "taskArns[0]" --output text --region us-east-1)
-          if [ "$VENTAS_TASK_ARN" != "None" ] && [ -n "$VENTAS_TASK_ARN" ]; then
-            VENTAS_ENI_ID=$(aws ecs describe-tasks --cluster proyecto-semestral-cluster --tasks $VENTAS_TASK_ARN --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text --region us-east-1)
-            if [ "$VENTAS_ENI_ID" != "None" ] && [ -n "$VENTAS_ENI_ID" ]; then
-              VENTAS_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $VENTAS_ENI_ID --query "NetworkInterfaces[0].Association.PublicIp" --output text --region us-east-1)
-              echo "VITE_API_VENTAS_URL=http://$VENTAS_IP:8080/api/v1/ventas" >> $GITHUB_ENV
-            else
-              echo "VITE_API_VENTAS_URL=http://localhost:8080/api/v1/ventas" >> $GITHUB_ENV
-            fi
-          else
-            echo "VITE_API_VENTAS_URL=http://localhost:8080/api/v1/ventas" >> $GITHUB_ENV
-          fi
-
-          # Fetch Despachos IP
-          DESPACHOS_TASK_ARN=$(aws ecs list-tasks --cluster proyecto-semestral-cluster --service-name despachos-service --query "taskArns[0]" --output text --region us-east-1)
-          if [ "$DESPACHOS_TASK_ARN" != "None" ] && [ -n "$DESPACHOS_TASK_ARN" ]; then
-            DESPACHOS_ENI_ID=$(aws ecs describe-tasks --cluster proyecto-semestral-cluster --tasks $DESPACHOS_TASK_ARN --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text --region us-east-1)
-            if [ "$DESPACHOS_ENI_ID" != "None" ] && [ -n "$DESPACHOS_ENI_ID" ]; then
-              DESPACHOS_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $DESPACHOS_ENI_ID --query "NetworkInterfaces[0].Association.PublicIp" --output text --region us-east-1)
-              echo "VITE_API_DESPACHOS_URL=http://$DESPACHOS_IP:8081/api/v1/despachos" >> $GITHUB_ENV
-            else
-              echo "VITE_API_DESPACHOS_URL=http://localhost:8081/api/v1/despachos" >> $GITHUB_ENV
-            fi
-          else
-            echo "VITE_API_DESPACHOS_URL=http://localhost:8081/api/v1/despachos" >> $GITHUB_ENV
-          fi
-
       - name: Build and push Docker image to ECR
         uses: docker/build-push-action@v6
         with:
@@ -74,9 +44,9 @@ jobs:
           context: ./front_despacho
           file: ./front_despacho/Dockerfile
           build-args: |
-            VITE_API_VENTAS_URL=${{ env.VITE_API_VENTAS_URL }}
-            VITE_API_DESPACHOS_URL=${{ env.VITE_API_DESPACHOS_URL }}
+            VITE_API_VENTAS_URL=http://semestral-alb-25385715.us-east-1.elb.amazonaws.com/api/v1/ventas
+            VITE_API_DESPACHOS_URL=http://semestral-alb-25385715.us-east-1.elb.amazonaws.com/api/v1/despachos
 
       - name: Deploy to Amazon ECS Fargate
         run: |
-          aws ecs update-service --cluster proyecto-semestral-cluster --service front-despacho-service --force-new-deployment --region us-east-1
+          aws ecs update-service --cluster proyecto-semestral-cluster --service front-despacho-service-v2 --force-new-deployment --region us-east-1

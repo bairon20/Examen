@@ -58,4 +58,4 @@ jobs:
 
       - name: Deploy to Amazon ECS Fargate
         run: |
-          aws ecs update-service --cluster proyecto-semestral-cluster --service despachos-service --force-new-deployment --region us-east-1
+          aws ecs update-service --cluster proyecto-semestral-cluster --service despachos-service-v2 --force-new-deployment --region us-east-1
