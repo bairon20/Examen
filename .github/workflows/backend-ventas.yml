@@ -56,50 +56,6 @@ jobs:
           context: ./back-Ventas_SpringBoot/Springboot-API-REST
           file: ./back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile
 
-      - name: Get ECR Password
-        id: ecr-pass
+      - name: Deploy to Amazon ECS Fargate
         run: |
-          echo "PASSWORD=$(aws ecr get-login-password --region us-east-1)" >> $GITHUB_ENV
-
-      - name: Instalar Doppler CLI
-        uses: dopplerhq/cli-action@v3
-
-      - name: Configurar Doppler CLI
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: doppler setup --token "$DOPPLER_TOKEN" --no-interactive
-
-      - name: Obtener secretos desde Doppler
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: |
-          echo "EC2_KEY=$(doppler secrets get EC2_KEY --plain)" >> $GITHUB_ENV
-          echo "SERVIDOR_VENTAS=$(doppler secrets get SERVIDOR_VENTAS --plain)" >> $GITHUB_ENV
-
-      - name: Login SSH on EC2 to Deploy
-        uses: appleboy/ssh-action@v1
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_PASSWORD: ${{ env.PASSWORD }}
-        with:
-          host: ${{ env.SERVIDOR_VENTAS }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.SSH_KEY_CITT }}
-          port: ${{ secrets.EC2_SSH_PORT }}
-          envs: ECR_REGISTRY,ECR_PASSWORD
-          script: |
-            mkdir -p /home/ubuntu/ventas/
-            cd /home/ubuntu/ventas/
-            sudo apt update -y
-            sudo apt install -y docker.io docker-compose
-            echo "$ECR_PASSWORD" | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
-            sudo docker pull $ECR_REGISTRY/ventas_api:latest
-            sudo docker stop ventas_api || true
-            sudo docker rm ventas_api || true
-            sudo docker run -d --name ventas_api -p 8080:8080 \
-              -e "DB_ENDPOINT=${{ secrets.DB_ENDPOINT }}" \
-              -e "DB_PORT=${{ secrets.DB_PORT }}" \
-              -e "DB_NAME=${{ secrets.DB_NAME }}" \
-              -e "DB_USERNAME=${{ secrets.DB_USERNAME }}" \
-              -e "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
-              $ECR_REGISTRY/ventas_api:latest
+          aws ecs update-service --cluster proyecto-semestral-cluster --service ventas-service --force-new-deployment --region us-east-1
