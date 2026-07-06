@@ -96,6 +96,16 @@ La topología de red recomendada para producción en AWS garantiza alta segurida
 
 ## 6. Orquestación y Escalabilidad en Producción: ECS/EKS vs EC2 Manual
 
+### 6.1. Clúster Aprovisionado en AWS para el Proyecto
+Como parte práctica de esta entrega, se ha configurado y desplegado de forma activa en la cuenta de AWS del estudiante en la región **us-east-1 (Norte de Virginia)**:
+* **Clúster de Amazon ECS:** `proyecto-semestral-cluster`
+* **Task Definitions (Fargate):**
+  * `ventas-api` (Port 8080) expuesto para el contenedor de la API de Ventas de Spring Boot.
+  * `despachos-api` (Port 8081) expuesto para el contenedor de la API de Despachos de Spring Boot.
+  * `front-despacho` (Port 80) expuesto para el servidor web Nginx con la compilación estática del Frontend React.
+
+Estas definiciones están listas para ser ejecutadas como servicios independientes dentro de subredes públicas (`awsvpc` network mode), lo que proporciona aislamiento de red y escalado independiente por microservicio.
+
 Para ambientes de producción empresarial, el uso de despliegue manual en instancias EC2 presenta serias limitaciones operativas. Por ello, se fundamenta la adopción de servicios de orquestación administrados como **Amazon ECS (Elastic Container Service) con Fargate**:
 
 1. **Operaciones del Servidor de Base (Serverless con Fargate):** Con EC2 manual, el administrador debe preocuparse de actualizar parches de seguridad del sistema operativo, configurar el daemon de Docker y gestionar el almacenamiento. ECS con AWS Fargate es serverless; elimina por completo la gestión del servidor físico o virtual, permitiendo enfocarse 100% en la aplicación.

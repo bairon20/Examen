@@ -100,6 +100,15 @@ graph LR
 
 ## 📈 Orquestación en Producción: ECS vs Despliegue Manual
 
+> [!IMPORTANT]
+> **Estado del Clúster en AWS (Listo para Demostración):**
+> Se ha creado el clúster ECS `proyecto-semestral-cluster` en la región de **Norte de Virginia (`us-east-1`)** y se registraron exitosamente las **Task Definitions** bajo Fargate para cada microservicio:
+> * `ventas-api` (Port 8080)
+> * `despachos-api` (Port 8081)
+> * `front-despacho` (Port 80)
+>
+> Esto te permite demostrar ante el docente tanto la orquestación en caliente basada en ECS Fargate como la entrega automatizada actual basada en EC2 y ECR.
+
 Para el despliegue final en producción en AWS, se recomienda utilizar **Amazon ECS (Elastic Container Service) con Fargate** en lugar de instancias EC2 independientes administradas manualmente:
 
 | Criterio | Despliegue Manual (EC2) | Amazon ECS + AWS Fargate |
